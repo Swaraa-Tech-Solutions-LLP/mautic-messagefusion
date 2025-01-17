@@ -38,23 +38,9 @@ class MessagefusionTransport extends AbstractApiTransport implements TokenTransp
 
     use TokenTransportTrait;
 
-    public const MAUTIC_MESSAGEFUSION_API_SCHEME = 'mautic+messagefusion+api';
+    public const MAUTIC_MESSAGEFUSION_API_SCHEME = 'mf+api';
 
-    public const MESSAGEFUSION_HOSTS = ['us' => 'messagefusion.org', 'eu' => 'api.eu.messagefusion.com'];
-
-    private const STD_HEADER_KEYS = [
-        'MIME-Version',
-        'received',
-        'dkim-signature',
-        'Content-Type',
-        'Content-Transfer-Encoding',
-        'To',
-        'From',
-        'Subject',
-        'Reply-To',
-        'CC',
-        'BCC',
-    ];
+    public const MESSAGEFUSION_HOSTS = 'messagefusion.org';
 
     public function __construct(
         private string $apiKey,
@@ -71,7 +57,7 @@ class MessagefusionTransport extends AbstractApiTransport implements TokenTransp
         $this->Newlogger->pushHandler(new StreamHandler('var/logs/messagefusion/messagefusion_transport.log', Logger::DEBUG));
         $this->Newlogger->debug('MessagefusionTransport is working ');
 
-        $this->host = self::MESSAGEFUSION_HOSTS[$region] ?? self::MESSAGEFUSION_HOSTS['us'];
+        $this->host = self::MESSAGEFUSION_HOSTS;
     }
 
     public function __toString(): string
