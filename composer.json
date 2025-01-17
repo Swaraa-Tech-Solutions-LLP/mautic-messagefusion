@@ -1,5 +1,5 @@
 {
-    "name": "acquia/mc-cs-plugin-messagefusion",
+    "name": "vastites/messagefusion",
     "description": "Messagefusion Mailer Plugin for Mautic",
     "type": "mautic-plugin",
     "license": "GPL-3.0-or-later",
