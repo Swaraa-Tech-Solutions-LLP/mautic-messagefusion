@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MessagefusionBundle\Mailer\Transport;
+namespace MauticPlugin\MessageFusionBundle\Mailer\Transport;
 
 use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
@@ -29,40 +29,29 @@ use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 
-class MessagefusionTransport extends AbstractApiTransport implements TokenTransportInterface
+class MessageFusionTransport extends AbstractApiTransport implements TokenTransportInterface
 {
-    private $Newlogger;
-
     use TokenTransportTrait;
 
     public const MAUTIC_MESSAGEFUSION_API_SCHEME = 'mf+api';
 
-    public const MESSAGEFUSION_HOSTS = 'messagefusion.org';
-
     public function __construct(
-        private string $apiKey,
-        string $region,
+        private readonly string   $apiToken,
+        private readonly string   $hostName,
         private TransportCallback $callback,
-        HttpClientInterface $client = null,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null
-    ) {
+        HttpClientInterface       $client = null,
+        EventDispatcherInterface  $dispatcher = null,
+        LoggerInterface           $logger = null
+    )
+    {
         parent::__construct($client, $dispatcher, $logger);
-        
-        // Initialize the logger
-        $this->Newlogger = new Logger('MessagefusionTransport');
-        $this->Newlogger->pushHandler(new StreamHandler('var/logs/messagefusion/messagefusion_transport.log', Logger::DEBUG));
-        $this->Newlogger->debug('MessagefusionTransport is working ');
-
-        $this->host = self::MESSAGEFUSION_HOSTS;
+        $this->setHost($hostName);
     }
 
     public function __toString(): string
     {
-        return sprintf(self::MAUTIC_MESSAGEFUSION_API_SCHEME.'://%s', $this->host);
+        return sprintf(self::MAUTIC_MESSAGEFUSION_API_SCHEME . '://%s', $this->host);
     }
 
     /**
@@ -74,65 +63,43 @@ class MessagefusionTransport extends AbstractApiTransport implements TokenTransp
      */
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
-        $payload = $this->getPayload($email, $envelope);
-        $this->Newlogger->debug('MessagefusionTransport is $payload ',['payload' => $payload]);
-        // $this->Newlogger->debug('MessagefusionTransport APi Url ---- https://'.$this->host.'/api/v1/send/message');
-
-        $response = $this->client->request('POST', 'https://'.$this->host.'/api/v1/send/message', [
-            'json' => $payload,
+        $response = $this->client->request('POST', 'https://' . $this->getEndpoint() . '/api/v1/send/message', [
+            'json' => $this->getPayload($email, $envelope),
             'headers' => [
-                'Content-Type' => 'application/json',
-                'X-Server-API-Key' => $this->apiKey,
+                'X-Server-API-Key' => $this->apiToken,
             ],
         ]);
-        $this->Newlogger->debug('MessagefusionTransport is $response ',['res' => $response]);
-        
+
         try {
             $statusCode = $response->getStatusCode();
             $result = $response->toArray(false);
         } catch (DecodingExceptionInterface $e) {
-            throw new HttpTransportException('Unable to send an email: '.$response->getContent(false).sprintf(' (code %d).', $statusCode), $response);
+            throw new HttpTransportException('Unable to send an email: ' . $response->getContent(false) . \sprintf(' (code %d).', $statusCode), $response);
         } catch (TransportExceptionInterface $e) {
-            throw new HttpTransportException('Could not reach the remote Messagefusion server.', $response, 0, $e);
+            throw new HttpTransportException('Could not reach the remote Postal server.', $response, 0, $e);
         }
-        $this->Newlogger->debug('MessagefusionTransport is $statusCode ',['statusCode' => $statusCode]);
-    
-        if (200 !== $statusCode) {
-            throw new HttpTransportException('Unable to send an email: '.$result['message'].sprintf(' (code %d).', $statusCode), $response);
-        }
-    
-        // Assuming the response contains the 'message_id' field
-        $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
 
-        // Check if 'message_id' exists before setting it
-        if (isset($result['data']['message_id']) && !empty($result['data']['message_id'])) {
-            $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
-            $sentMessage->setMessageId($result['data']['message_id']);
-        } else {
-            // Log a warning if message_id is missing
-            $this->Newlogger->warning('Messagefusion API did not return a message_id.');
-            throw new HttpTransportException('Messagefusion API did not return a message_id.');
+        if (200 !== $statusCode) {
+            throw new HttpTransportException('Unable to send an email: ' . $result['message'] . \sprintf(' (code %d).', $statusCode), $response);
         }
-    
+
+        $sentMessage->setMessageId($result['message_id']);
+
         return $response;
     }
 
-    /**
-     * @return array<mixed>
-     */
     private function getPayload(Email $email, Envelope $envelope): array
-    {   
-
+    {
         $payload = [
             'from' => $envelope->getSender()->getAddress(),
-            'to' => array_map(fn (Address $address) => $address->getAddress(), $this->getRecipients($email, $envelope)),
+            'to' => array_map(fn(Address $address) => $address->getAddress(), $this->getRecipients($email, $envelope)),
             'subject' => $email->getSubject(),
         ];
         if ($emails = $email->getCc()) {
-            $payload['cc'] = array_map(fn (Address $address) => $address->getAddress(), $emails);
+            $payload['cc'] = array_map(fn(Address $address) => $address->getAddress(), $emails);
         }
         if ($emails = $email->getBcc()) {
-            $payload['bcc'] = array_map(fn (Address $address) => $address->getAddress(), $emails);
+            $payload['bcc'] = array_map(fn(Address $address) => $address->getAddress(), $emails);
         }
         if ($email->getTextBody()) {
             $payload['plain_body'] = $email->getTextBody();
@@ -149,8 +116,6 @@ class MessagefusionTransport extends AbstractApiTransport implements TokenTransp
         if ($emails = $email->getReplyTo()) {
             $payload['reply_to'] = $emails[0]->getAddress();
         }
-
-        // $payload['campaign_id'] = $this->getCampaignId($metadata, $metadataSet);
 
         return $payload;
     }
@@ -187,35 +152,13 @@ class MessagefusionTransport extends AbstractApiTransport implements TokenTransp
         return $headers;
     }
 
-
-    /**
-     * @param array<mixed> $metadata
-     * @param array<mixed> $metadataSet
-     */
-    // private function getCampaignId(array $metadata, array $metadataSet): string
-    // {
-    //     $campaignId = '';
-
-    //     if (!empty($metadata)) {
-    //         $id = '';
-
-    //         if (!empty($metadataSet['utmTags']['utmCampaign'])) {
-    //             $id = $metadataSet['utmTags']['utmCampaign'];
-    //         } elseif (!empty($metadataSet['emailId']) && !empty($metadataSet['emailName'])) {
-    //             $id = $metadataSet['emailId'].':'.$metadataSet['emailName'];
-    //         } elseif (!empty($metadataSet['emailId'])) {
-    //             $id = $metadataSet['emailId'];
-    //         }
-
-    //         $campaignId = mb_strcut($id, 0, 64);
-    //     }
-
-    //     return $campaignId;
-    // }
-
+    private function getEndpoint(): string
+    {
+        return $this->host . ($this->port ? ':' . $this->port : '');
+    }
 
     public function getMaxBatchLimit(): int
     {
-        return 5000;
+        return 100;
     }
 }

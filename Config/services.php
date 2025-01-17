@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use MauticPlugin\MessagefusionBundle\Mailer\Factory\MessagefusionTransportFactory;
+use MauticPlugin\MessageFusionBundle\Mailer\Factory\MessageFusionTransportFactory;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $configurator): void {
@@ -11,8 +11,8 @@ return static function (ContainerConfigurator $configurator): void {
         ->autowire()
         ->autoconfigure();
 
-    $services->load('MauticPlugin\\MessagefusionBundle\\', '../')
-        ->exclude('../{Config,Helper/MessagefusionResponse.php,Mailer/Transport/MessagefusionTransport.php}');
+    $services->load('MauticPlugin\\MessageFusionBundle\\', '../')
+        ->exclude('../{Config,Mailer/Transport/MessageFusionTransport.php}');
 
-    $services->get(MessagefusionTransportFactory::class)->tag('mailer.transport_factory');
+    $services->get(MessageFusionTransportFactory::class)->tag('mailer.transport_factory');
 };

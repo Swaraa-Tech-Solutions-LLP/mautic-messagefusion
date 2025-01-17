@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MessagefusionBundle\Mailer\Factory;
+namespace MauticPlugin\MessageFusionBundle\Mailer\Factory;
 
 use Mautic\EmailBundle\Model\TransportCallback;
-use MauticPlugin\MessagefusionBundle\Mailer\Transport\MessagefusionTransport;
+use MauticPlugin\MessageFusionBundle\Mailer\Transport\MessageFusionTransport;
+use MauticPlugin\SparkpostBundle\Mailer\Transport\SparkpostTransport;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mailer\Exception\InvalidArgumentException;
@@ -15,26 +16,17 @@ use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
 
-class MessagefusionTransportFactory extends AbstractTransportFactory
+class MessageFusionTransportFactory extends AbstractTransportFactory
 {
-    private $Newlogger;
-
     public function __construct(
-        private TransportCallback $transportCallback,
+        private TransportCallback   $transportCallback,
         private TranslatorInterface $translator,
-        EventDispatcherInterface $eventDispatcher,
-        HttpClientInterface $client = null,
-        LoggerInterface $logger = null
-    ) {
-
-        // Initialize the logger
-        $this->Newlogger = new Logger('MessagefusionTransportFactory');
-        $this->Newlogger->pushHandler(new StreamHandler('var/logs/messagefusion/messagefusion_factory.log', Logger::DEBUG));
-        $this->Newlogger->debug('MessagefusionTransportFactory is working ');
-
+        EventDispatcherInterface    $eventDispatcher,
+        HttpClientInterface         $client = null,
+        LoggerInterface             $logger = null
+    )
+    {
         parent::__construct($eventDispatcher, $client, $logger);
     }
 
@@ -43,18 +35,17 @@ class MessagefusionTransportFactory extends AbstractTransportFactory
      */
     protected function getSupportedSchemes(): array
     {
-        return [MessagefusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME];
+        return [MessageFusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME];
     }
 
     public function create(Dsn $dsn): TransportInterface
     {
-        if (MessagefusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME === $dsn->getScheme()) {
-            // Removed region validation and no default region set
-            $region = (string) $dsn->getOption('region', '');
-
-            return new MessagefusionTransport(
+        if (MessageFusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME === $dsn->getScheme()) {
+            $host = $dsn->getHost();
+            $port = $dsn->getPort();
+            return new MessageFusionTransport(
                 $this->getPassword($dsn),
-                $region, // Will pass null if region is not provided
+                $host,
                 $this->transportCallback,
                 $this->client,
                 $this->dispatcher,

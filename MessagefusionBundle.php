@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MessagefusionBundle;
+namespace MauticPlugin\MessageFusionBundle;
 
 use Mautic\IntegrationsBundle\Bundle\AbstractPluginBundle;
 
-class MessagefusionBundle extends AbstractPluginBundle
+class MessageFusionBundle extends AbstractPluginBundle
 {
 }

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MessagefusionBundle\EventSubscriber;
+namespace MauticPlugin\MessageFusionBundle\EventSubscriber;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
-use MauticPlugin\MessagefusionBundle\Mailer\Transport\MessagefusionTransport;
+use MauticPlugin\SparkpostBundle\Mailer\Transport\SparkpostTransport;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -36,7 +36,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $dsn = Dsn::fromString($this->coreParametersHelper->get('mailer_dsn'));
 
-        if (MessagefusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME !== $dsn->getScheme()) {
+        if (SparkpostTransport::MAUTIC_SPARKPOST_API_SCHEME !== $dsn->getScheme()) {
             return;
         }
 
@@ -61,7 +61,7 @@ class CallbackSubscriber implements EventSubscriberInterface
             if (('bounce' === $type && !in_array((int) $bounceClass, [10, 25, 26, 30, 90]))
                 || ('out_of_band' === $type && 60 === (int) $bounceClass)
             ) {
-                // Only parse hard bounces - update for your classification codes
+                // Only parse hard bounces - https://support.sparkpost.com/docs/deliverability/bounce-classification-codes
                 continue;
             }
 
