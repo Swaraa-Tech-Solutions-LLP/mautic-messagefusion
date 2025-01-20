@@ -9,7 +9,7 @@ use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
-use MauticPlugin\SparkpostBundle\Mailer\Transport\SparkpostTransport;
+use MauticPlugin\MessageFusionBundle\Mailer\Transport\MessageFusionTransport;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -17,9 +17,10 @@ use Symfony\Component\Mailer\Transport\Dsn;
 class CallbackSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private TransportCallback $transportCallback,
+        private TransportCallback    $transportCallback,
         private CoreParametersHelper $coreParametersHelper
-    ) {
+    )
+    {
     }
 
     /**
@@ -36,14 +37,14 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $dsn = Dsn::fromString($this->coreParametersHelper->get('mailer_dsn'));
 
-        if (SparkpostTransport::MAUTIC_SPARKPOST_API_SCHEME !== $dsn->getScheme()) {
+        if (MessageFusionTransport::MAUTIC_MESSAGEFUSION_API_SCHEME !== $dsn->getScheme()) {
             return;
         }
 
         $payload = $event->getRequest()->request->all();
 
         foreach ($payload as $msys) {
-            $msys         = $msys['msys'] ?? null;
+            $msys = $msys['msys'] ?? null;
             $messageEvent = $msys['message_event'] ?? $msys['unsubscribe_event'] ?? null;
 
             if (!$messageEvent) {
@@ -55,13 +56,12 @@ class CallbackSubscriber implements EventSubscriberInterface
                 continue;
             }
 
-            $type        = $messageEvent['type'] ?? null;
+            $type = $messageEvent['type'] ?? null;
             $bounceClass = $messageEvent['bounce_class'] ?? null;
 
-            if (('bounce' === $type && !in_array((int) $bounceClass, [10, 25, 26, 30, 90]))
-                || ('out_of_band' === $type && 60 === (int) $bounceClass)
+            if (('bounce' === $type && !in_array((int)$bounceClass, [10, 25, 26, 30, 90]))
+                || ('out_of_band' === $type && 60 === (int)$bounceClass)
             ) {
-                // Only parse hard bounces - https://support.sparkpost.com/docs/deliverability/bounce-classification-codes
                 continue;
             }
 
@@ -81,7 +81,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @param string       $hashId
+     * @param string $hashId
      * @param array<mixed> $event
      */
     private function processCallbackByHashId($hashId, array $event): void
@@ -109,7 +109,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * @param string       $email
+     * @param string $email
      * @param array<mixed> $event
      */
     private function processCallbackByEmailAddress($email, array $event): void

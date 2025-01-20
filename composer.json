@@ -1,6 +1,6 @@
 {
     "name": "vastites/messagefusion",
-    "description": "Sparkpost Mailer Plugin for Mautic",
+    "description": "MessageFusion Mailer Plugin for Mautic",
     "type": "mautic-plugin",
     "license": "GPL-3.0-or-later",
     "keywords": [
