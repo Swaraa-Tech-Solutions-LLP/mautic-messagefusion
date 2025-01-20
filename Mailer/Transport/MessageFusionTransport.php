@@ -29,9 +29,13 @@ use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class MessageFusionTransport extends AbstractApiTransport implements TokenTransportInterface
 {
+    private $Newlogger;
+
     use TokenTransportTrait;
 
     public const MAUTIC_MESSAGEFUSION_API_SCHEME = 'mf+api';
@@ -47,6 +51,11 @@ class MessageFusionTransport extends AbstractApiTransport implements TokenTransp
     {
         parent::__construct($client, $dispatcher, $logger);
         $this->setHost($hostName);
+             
+        // Initialize the logger
+        $this->Newlogger = new Logger('MessagefusionTransport');
+        $this->Newlogger->pushHandler(new StreamHandler('var/logs/messagefusion/messagefusion_transport.log', Logger::DEBUG));
+        $this->Newlogger->debug('MessagefusionTransport is working ');
     }
 
     public function __toString(): string
@@ -69,21 +78,36 @@ class MessageFusionTransport extends AbstractApiTransport implements TokenTransp
                 'X-Server-API-Key' => $this->apiToken,
             ],
         ]);
+        $this->Newlogger->debug('MessagefusionTransport is $response ',['res' => $response]);
 
         try {
             $statusCode = $response->getStatusCode();
             $result = $response->toArray(false);
         } catch (DecodingExceptionInterface $e) {
-            throw new HttpTransportException('Unable to send an email: ' . $response->getContent(false) . \sprintf(' (code %d).', $statusCode), $response);
+            $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
+            throw new HttpTransportException('Unable to send an email: '.$response->getContent(false).sprintf(' (code %d).', $statusCode), $response);
         } catch (TransportExceptionInterface $e) {
-            throw new HttpTransportException('Could not reach the remote Postal server.', $response, 0, $e);
+            $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
+            throw new HttpTransportException('Could not reach the remote Messagefusion server.', $response, 0, $e);
         }
+            $this->Newlogger->debug('MessagefusionTransport is $statusCode ',['statusCode' => $statusCode]);
 
         if (200 !== $statusCode) {
             throw new HttpTransportException('Unable to send an email: ' . $result['message'] . \sprintf(' (code %d).', $statusCode), $response);
         }
 
-        $sentMessage->setMessageId($result['message_id']);
+         // Assuming the response contains the 'message_id' field
+         $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
+
+        // Check if 'message_id' exists before setting it
+        if (isset($result['data']['message_id']) && !empty($result['data']['message_id'])) {
+            $this->Newlogger->debug('MessagefusionTransport is $result ',['result' => $result]);
+            $sentMessage->setMessageId($result['data']['message_id']);
+        } else {
+            // Log a warning if message_id is missing
+            $this->Newlogger->warning('Messagefusion API did not return a message_id.');
+            throw new HttpTransportException('Messagefusion API did not return a message_id.');
+        }
 
         return $response;
     }

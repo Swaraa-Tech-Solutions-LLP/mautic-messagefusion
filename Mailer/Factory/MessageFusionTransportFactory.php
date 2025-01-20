@@ -15,6 +15,8 @@ use Symfony\Component\Mailer\Transport\Dsn;
 use Symfony\Component\Mailer\Transport\TransportInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 class MessageFusionTransportFactory extends AbstractTransportFactory
 {
@@ -26,6 +28,11 @@ class MessageFusionTransportFactory extends AbstractTransportFactory
         LoggerInterface             $logger = null
     )
     {
+          // Initialize the logger
+          $this->Newlogger = new Logger('MessagefusionTransportFactory');
+        //   $this->Newlogger->pushHandler(new StreamHandler('var/logs/messagefusion/messagefusion_factory.log', Logger::DEBUG));
+        //   $this->Newlogger->debug('MessagefusionTransportFactory is working ');
+
         parent::__construct($eventDispatcher, $client, $logger);
     }
 
