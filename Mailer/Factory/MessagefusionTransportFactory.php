@@ -6,7 +6,6 @@ namespace MauticPlugin\MessageFusionBundle\Mailer\Factory;
 
 use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\MessageFusionBundle\Mailer\Transport\MessageFusionTransport;
-use MauticPlugin\SparkpostBundle\Mailer\Transport\SparkpostTransport;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mailer\Exception\InvalidArgumentException;
